@@ -42,7 +42,7 @@ module.exports = {
           [vote_type]: ++oldRequest.votes[vote_type],
           [other_type]: oldRequest.votes[other_type],
         },
-      }
+      }, { new: true}
     );
   },
 
