@@ -2,10 +2,6 @@ import { VideoRequest, Votes } from "./video.model";
 
 const listOfVidsElem = document.getElementById('listOfRequests');
 
-function setDate(date: string): Date {
-return new Date(date)
-}
-
 function appendVideoPost(videoInfo: VideoRequest, isPrepend = false) {
     const videoContainerElm = document.createElement('div');
     videoContainerElm.innerHTML =  `
@@ -29,7 +25,7 @@ function appendVideoPost(videoInfo: VideoRequest, isPrepend = false) {
                 <div>
                   <span class="text-info">${videoInfo.status.toUpperCase()}</span>
                   &bullet; added by <strong>${videoInfo.author_name}</strong> on
-                  <strong>${setDate(videoInfo.submit_date)}</strong>
+                  <strong>${new Date(videoInfo.submit_date).toLocaleDateString()}</strong>
                 </div>
                 <div
                   class="d-flex justify-content-center flex-column 408ml-auto mr-2"
