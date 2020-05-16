@@ -66,17 +66,36 @@ function appendVideoPost(videoInfo: VideoRequest, isPrepend = false) {
     });
 }
 
-document.addEventListener('DOMContentLoaded', function() {
-    const formVidReq = document.getElementById('formVideoRequest') as HTMLFormElement;
-
-   
-    
-    fetch('http://localhost:7777/video-request').then(res => res.json()).then((data: VideoRequest[]) => 
+function loadAllVidReqs(sortBy= 'newFirst') {
+  fetch(`http://localhost:7777/video-request?sortBy=${sortBy}`).then(res => res.json()).then((data: VideoRequest[]) => {
+  listOfVidsElem.innerHTML = '';
     data.forEach(item =>
         {
             appendVideoPost(item);
         })
+      }
     );
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const formVidReq = document.getElementById('formVideoRequest') as HTMLFormElement;
+
+    const sortByElms = document.querySelectorAll('[id*=sort_by_]')
+    loadAllVidReqs()
+    sortByElms.forEach(elm => {
+      elm.addEventListener('click',function(e) {
+        e.preventDefault();
+        const sortBy = this.querySelector('input')
+        loadAllVidReqs(sortBy.value);
+        this.classList.add('active');
+        if(sortBy.value === 'topVotedFirst'){
+          document.getElementById('sort_by_new').classList.remove('active');
+        } else {
+          document.getElementById('sort_by_top').classList.remove('active');
+        }
+      })
+    })
+    
 
 
     formVidReq.addEventListener('submit', (e) => {

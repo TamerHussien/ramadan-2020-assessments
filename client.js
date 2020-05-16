@@ -33,11 +33,31 @@ function appendVideoPost(videoInfo, isPrepend) {
         });
     });
 }
+function loadAllVidReqs(sortBy) {
+    if (sortBy === void 0) { sortBy = 'newFirst'; }
+    fetch("http://localhost:7777/video-request?sortBy=" + sortBy).then(function (res) { return res.json(); }).then(function (data) {
+        listOfVidsElem.innerHTML = '';
+        data.forEach(function (item) {
+            appendVideoPost(item);
+        });
+    });
+}
 document.addEventListener('DOMContentLoaded', function () {
     var formVidReq = document.getElementById('formVideoRequest');
-    fetch('http://localhost:7777/video-request').then(function (res) { return res.json(); }).then(function (data) {
-        return data.forEach(function (item) {
-            appendVideoPost(item);
+    var sortByElms = document.querySelectorAll('[id*=sort_by_]');
+    loadAllVidReqs();
+    sortByElms.forEach(function (elm) {
+        elm.addEventListener('click', function (e) {
+            e.preventDefault();
+            var sortBy = this.querySelector('input');
+            loadAllVidReqs(sortBy.value);
+            this.classList.add('active');
+            if (sortBy.value === 'topVotedFirst') {
+                document.getElementById('sort_by_new').classList.remove('active');
+            }
+            else {
+                document.getElementById('sort_by_top').classList.remove('active');
+            }
         });
     });
     formVidReq.addEventListener('submit', function (e) {
