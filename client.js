@@ -1,6 +1,7 @@
 "use strict";
 exports.__esModule = true;
 var listOfVidsElem = document.getElementById('listOfRequests');
+var sortBy = 'newFirst';
 function appendVideoPost(videoInfo, isPrepend) {
     if (isPrepend === void 0) { isPrepend = false; }
     var videoContainerElm = document.createElement('div');
@@ -33,26 +34,40 @@ function appendVideoPost(videoInfo, isPrepend) {
         });
     });
 }
-function loadAllVidReqs(sortBy) {
+function loadAllVidReqs(sortBy, searchTerm) {
     if (sortBy === void 0) { sortBy = 'newFirst'; }
-    fetch("http://localhost:7777/video-request?sortBy=" + sortBy).then(function (res) { return res.json(); }).then(function (data) {
+    if (searchTerm === void 0) { searchTerm = ''; }
+    fetch("http://localhost:7777/video-request?sortBy=" + sortBy + "&searchTerm=" + searchTerm).then(function (res) { return res.json(); }).then(function (data) {
         listOfVidsElem.innerHTML = '';
         data.forEach(function (item) {
             appendVideoPost(item);
         });
     });
 }
+function debounce(fn, time) {
+    var timeout;
+    return function () {
+        var _this = this;
+        var args = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            args[_i] = arguments[_i];
+        }
+        clearTimeout(timeout);
+        timeout = setTimeout(function () { return fn.apply(_this, args); }, time);
+    };
+}
 document.addEventListener('DOMContentLoaded', function () {
     var formVidReq = document.getElementById('formVideoRequest');
     var sortByElms = document.querySelectorAll('[id*=sort_by_]');
+    var searchBoxElm = document.getElementById('search_box');
     loadAllVidReqs();
     sortByElms.forEach(function (elm) {
         elm.addEventListener('click', function (e) {
             e.preventDefault();
-            var sortBy = this.querySelector('input');
-            loadAllVidReqs(sortBy.value);
+            sortBy = this.querySelector('input').value;
+            loadAllVidReqs(sortBy);
             this.classList.add('active');
-            if (sortBy.value === 'topVotedFirst') {
+            if (sortBy === 'topVotedFirst') {
                 document.getElementById('sort_by_new').classList.remove('active');
             }
             else {
@@ -60,6 +75,10 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
     });
+    searchBoxElm.addEventListener('input', debounce(function (e) {
+        var searchTerm = e.target.value;
+        loadAllVidReqs(sortBy, searchTerm);
+    }, 300));
     formVidReq.addEventListener('submit', function (e) {
         e.preventDefault();
         var formData = new FormData(formVidReq);

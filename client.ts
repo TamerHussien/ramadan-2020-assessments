@@ -1,6 +1,7 @@
 import { VideoRequest, Votes } from "./video.model";
 
 const listOfVidsElem = document.getElementById('listOfRequests');
+let sortBy = 'newFirst';
 
 function appendVideoPost(videoInfo: VideoRequest, isPrepend = false) {
     const videoContainerElm = document.createElement('div');
@@ -66,8 +67,8 @@ function appendVideoPost(videoInfo: VideoRequest, isPrepend = false) {
     });
 }
 
-function loadAllVidReqs(sortBy= 'newFirst') {
-  fetch(`http://localhost:7777/video-request?sortBy=${sortBy}`).then(res => res.json()).then((data: VideoRequest[]) => {
+function loadAllVidReqs(sortBy= 'newFirst', searchTerm = '') {
+  fetch(`http://localhost:7777/video-request?sortBy=${sortBy}&searchTerm=${searchTerm}`).then(res => res.json()).then((data: VideoRequest[]) => {
   listOfVidsElem.innerHTML = '';
     data.forEach(item =>
         {
@@ -77,18 +78,27 @@ function loadAllVidReqs(sortBy= 'newFirst') {
     );
 }
 
+function debounce(fn:Function, time: number) {
+  let timeout;
+  return function(...args) {
+    clearTimeout(timeout)
+    timeout = setTimeout(() => fn.apply(this, args), time);
+  }
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     const formVidReq = document.getElementById('formVideoRequest') as HTMLFormElement;
+    const sortByElms = document.querySelectorAll('[id*=sort_by_]');
+    const searchBoxElm = document.getElementById('search_box') as HTMLInputElement;
 
-    const sortByElms = document.querySelectorAll('[id*=sort_by_]')
     loadAllVidReqs()
     sortByElms.forEach(elm => {
       elm.addEventListener('click',function(e) {
         e.preventDefault();
-        const sortBy = this.querySelector('input')
-        loadAllVidReqs(sortBy.value);
+        sortBy = this.querySelector('input').value;
+        loadAllVidReqs(sortBy);
         this.classList.add('active');
-        if(sortBy.value === 'topVotedFirst'){
+        if(sortBy === 'topVotedFirst'){
           document.getElementById('sort_by_new').classList.remove('active');
         } else {
           document.getElementById('sort_by_top').classList.remove('active');
@@ -96,7 +106,10 @@ document.addEventListener('DOMContentLoaded', function() {
       })
     })
     
-
+    searchBoxElm.addEventListener('input', debounce((e: Event) => {
+      const searchTerm  = (<HTMLInputElement>e.target).value;
+      loadAllVidReqs(sortBy, searchTerm)
+    }, 300))
 
     formVidReq.addEventListener('submit', (e) => {
       e.preventDefault();
