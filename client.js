@@ -56,6 +56,35 @@ function debounce(fn, time) {
         timeout = setTimeout(function () { return fn.apply(_this, args); }, time);
     };
 }
+function checkValidity(formData) {
+    var name = formData.get('author_name');
+    var email = formData.get('author_email');
+    var topic = formData.get('topic_title');
+    var topicDetails = formData.get('topic_details');
+    if (!name) {
+        document.querySelector('[name=author_name]').classList.add('is-invalid');
+    }
+    var emailPattern = /^([\w-]+(?:\.[\w-]+)*)@((?:[\w-]+\.)*\w[\w-]{0,66})\.([a-z]{2,6}(?:\.[a-z]{2})?)$/;
+    if (!email || !emailPattern.test(email)) {
+        document.querySelector('[name=author_email]').classList.add('is-invalid');
+    }
+    if (!topic || topic.toString().length > 30) {
+        document.querySelector('[name=topic_title]').classList.add('is-invalid');
+    }
+    if (!topicDetails) {
+        document.querySelector('[name=topic_details]').classList.add('is-invalid');
+    }
+    var allInvalidElms = document.getElementById('formVideoRequest').querySelectorAll('.is-invalid');
+    if (allInvalidElms.length) {
+        allInvalidElms.forEach(function (elm) {
+            elm.addEventListener('input', function () {
+                this.classList.remove('is-invalid');
+            });
+        });
+        return false;
+    }
+    return true;
+}
 document.addEventListener('DOMContentLoaded', function () {
     var formVidReq = document.getElementById('formVideoRequest');
     var sortByElms = document.querySelectorAll('[id*=sort_by_]');
@@ -82,6 +111,10 @@ document.addEventListener('DOMContentLoaded', function () {
     formVidReq.addEventListener('submit', function (e) {
         e.preventDefault();
         var formData = new FormData(formVidReq);
+        var isValid = checkValidity(formData);
+        if (!isValid) {
+            return;
+        }
         fetch('http://localhost:7777/video-request', {
             method: 'POST',
             body: formData

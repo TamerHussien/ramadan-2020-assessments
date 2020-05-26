@@ -86,6 +86,37 @@ function debounce(fn:Function, time: number) {
   }
 }
 
+function checkValidity(formData: FormData): boolean {
+  const name = formData.get('author_name');
+  const email = formData.get('author_email');
+  const topic = formData.get('topic_title');
+  const topicDetails = formData.get('topic_details');
+  if(!name) {
+    document.querySelector('[name=author_name]').classList.add('is-invalid')
+  }
+  const emailPattern = /^([\w-]+(?:\.[\w-]+)*)@((?:[\w-]+\.)*\w[\w-]{0,66})\.([a-z]{2,6}(?:\.[a-z]{2})?)$/;
+  if(!email || !emailPattern.test(email as string)) {
+    document.querySelector('[name=author_email]').classList.add('is-invalid')
+  }
+  if(!topic || topic.toString().length > 30) {
+    document.querySelector('[name=topic_title]').classList.add('is-invalid')
+  }
+  if(!topicDetails) {
+    document.querySelector('[name=topic_details]').classList.add('is-invalid')
+  }
+  const allInvalidElms = document.getElementById('formVideoRequest').querySelectorAll('.is-invalid');
+  
+  if(allInvalidElms.length) {
+    allInvalidElms.forEach((elm)   => {
+      elm.addEventListener('input', function() {
+        this.classList.remove('is-invalid')
+      })
+    })
+    return false;
+  }
+    return true;
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     const formVidReq = document.getElementById('formVideoRequest') as HTMLFormElement;
     const sortByElms = document.querySelectorAll('[id*=sort_by_]');
@@ -114,6 +145,8 @@ document.addEventListener('DOMContentLoaded', function() {
     formVidReq.addEventListener('submit', (e) => {
       e.preventDefault();
       const formData = new FormData(formVidReq)
+      const isValid = checkValidity(formData);
+      if (!isValid){ return}
       fetch('http://localhost:7777/video-request', {
         method: 'POST', 
         body: formData 

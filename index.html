@@ -12,7 +12,7 @@
   <body>
     <div class="container my-5">
       <div class="formContainer my-5">
-        <form id="formVideoRequest">
+        <form id="formVideoRequest" novalidate>
           <div class="row">
             <div class="col-md">
               <div class="form-group">
@@ -21,7 +21,12 @@
                   class="form-control"
                   name="author_name"
                   placeholder="Write your name here"
+                  type="text"
+                  required
                 />
+                <p class="invalid-feedback">
+                  this field is required
+                </p>
               </div>
             </div>
             <div class="col-md">
@@ -31,7 +36,13 @@
                   class="form-control"
                   name="author_email"
                   placeholder="Write your email here"
+                  type="email"
+                  required
+                  maxlength="100"
                 />
+                <p class="invalid-feedback">
+                  this field is required and should be a valid e-mail
+                </p>
               </div>
             </div>
           </div>
@@ -44,7 +55,12 @@
                   class="form-control"
                   name="topic_title"
                   placeholder="Write your suggested topic here"
+                  required
+                  maxlength="100"
                 />
+                <p class="invalid-feedback">
+                  this field is required and shouldn't exceed 30 characters
+                </p>
               </div>
             </div>
             <div class="col-md">
@@ -70,7 +86,11 @@
                   class="form-control"
                   name="topic_details"
                   placeholder="Write your topic in more details here"
+                  required
                 ></textarea>
+                <p class="invalid-feedback">
+                  this field is required
+                </p>
               </div>
             </div>
             <div class="col-md">
