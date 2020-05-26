@@ -1,8 +1,12 @@
 import { VideoRequest, Votes } from "./video.model";
 
 const listOfVidsElem = document.getElementById('listOfRequests');
-let sortBy = 'newFirst';
 
+const state = {
+  sortBy :'newFirst',
+  searchTerm: '',
+  userId: '',
+}
 function appendVideoPost(videoInfo: VideoRequest, isPrepend = false) {
     const videoContainerElm = document.createElement('div');
     videoContainerElm.innerHTML =  `
@@ -67,7 +71,7 @@ function appendVideoPost(videoInfo: VideoRequest, isPrepend = false) {
     });
 }
 
-function loadAllVidReqs(sortBy= 'newFirst', searchTerm = '') {
+function loadAllVidReqs(sortBy = 'newFirst', searchTerm = '') {
   fetch(`http://localhost:7777/video-request?sortBy=${sortBy}&searchTerm=${searchTerm}`).then(res => res.json()).then((data: VideoRequest[]) => {
   listOfVidsElem.innerHTML = '';
     data.forEach(item =>
@@ -87,17 +91,8 @@ function debounce(fn:Function, time: number) {
 }
 
 function checkValidity(formData: FormData): boolean {
-  const name = formData.get('author_name');
-  const email = formData.get('author_email');
   const topic = formData.get('topic_title');
   const topicDetails = formData.get('topic_details');
-  if(!name) {
-    document.querySelector('[name=author_name]').classList.add('is-invalid')
-  }
-  const emailPattern = /^([\w-]+(?:\.[\w-]+)*)@((?:[\w-]+\.)*\w[\w-]{0,66})\.([a-z]{2,6}(?:\.[a-z]{2})?)$/;
-  if(!email || !emailPattern.test(email as string)) {
-    document.querySelector('[name=author_email]').classList.add('is-invalid')
-  }
   if(!topic || topic.toString().length > 30) {
     document.querySelector('[name=topic_title]').classList.add('is-invalid')
   }
@@ -121,15 +116,22 @@ document.addEventListener('DOMContentLoaded', function() {
     const formVidReq = document.getElementById('formVideoRequest') as HTMLFormElement;
     const sortByElms = document.querySelectorAll('[id*=sort_by_]');
     const searchBoxElm = document.getElementById('search_box') as HTMLInputElement;
+    const formLoginElm = document.querySelector('.form-login');
+    const appContentElm = document.querySelector('.app-content');
 
+    if(window.location.search) {
+      state.userId = new URLSearchParams(window.location.search).get('id')
+      formLoginElm.classList.add('d-none');
+      appContentElm.classList.remove('d-none');
+    }
     loadAllVidReqs()
     sortByElms.forEach(elm => {
       elm.addEventListener('click',function(e) {
         e.preventDefault();
-        sortBy = this.querySelector('input').value;
-        loadAllVidReqs(sortBy);
+        state.sortBy = this.querySelector('input').value;
+        loadAllVidReqs(state.sortBy);
         this.classList.add('active');
-        if(sortBy === 'topVotedFirst'){
+        if(state.sortBy === 'topVotedFirst'){
           document.getElementById('sort_by_new').classList.remove('active');
         } else {
           document.getElementById('sort_by_top').classList.remove('active');
@@ -138,13 +140,14 @@ document.addEventListener('DOMContentLoaded', function() {
     })
     
     searchBoxElm.addEventListener('input', debounce((e: Event) => {
-      const searchTerm  = (<HTMLInputElement>e.target).value;
-      loadAllVidReqs(sortBy, searchTerm)
+      state.searchTerm  = (<HTMLInputElement>e.target).value;
+      loadAllVidReqs(state.sortBy, state.searchTerm)
     }, 300))
 
     formVidReq.addEventListener('submit', (e) => {
       e.preventDefault();
       const formData = new FormData(formVidReq)
+      formData.append('author_id', state.userId);
       const isValid = checkValidity(formData);
       if (!isValid){ return}
       fetch('http://localhost:7777/video-request', {

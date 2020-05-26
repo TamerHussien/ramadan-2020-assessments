@@ -11,10 +11,8 @@
   </head>
   <body>
     <div class="container my-5">
-      <div class="formContainer my-5">
-        <form id="formVideoRequest" novalidate>
-          <div class="row">
-            <div class="col-md">
+      <div class="form-login col-md-4 offset-md-4 pt-4">
+        <form action="http://localhost:7777/users/login" method="post">
               <div class="form-group">
                 <label for="author_name">Your name *</label>
                 <input
@@ -28,8 +26,6 @@
                   this field is required
                 </p>
               </div>
-            </div>
-            <div class="col-md">
               <div class="form-group">
                 <label for="author_email">Your email *</label>
                 <input
@@ -44,9 +40,14 @@
                   this field is required and should be a valid e-mail
                 </p>
               </div>
-            </div>
-          </div>
-          <hr />
+              <div class="form-group">
+                <button class="btn btn-primary btn-block">login</button>
+              </div>
+        </form>
+      </div>
+      <div class="app-content d-none">
+      <div class="formContainer my-5">
+        <form id="formVideoRequest" novalidate>
           <div class="row">
             <div class="col-md">
               <div class="form-group">
@@ -127,6 +128,7 @@
       </div>
       <div id="listOfRequests">
       </div>
+    </div>
     </div>
   </body>
   <script> var exports = {}; </script>
