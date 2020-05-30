@@ -22,7 +22,7 @@ function appendVideoPost(videoInfo: VideoRequest, isPrepend = false) {
                 </div>
                 <div class="d-flex flex-column text-center">
                   <a class="btn btn-link" id="votes_ups_${videoInfo._id}">🔺</a>
-                  <h3 id="score_votes_${videoInfo._id}">${videoInfo.votes.ups - videoInfo.votes.downs}</h3>
+                  <h3 id="score_votes_${videoInfo._id}">${videoInfo.votes.ups.length - videoInfo.votes.downs.length}</h3>
                   <a class="btn btn-link" id="votes_downs_${videoInfo._id}">🔻</a>
                 </div>
               </div>
@@ -47,28 +47,54 @@ function appendVideoPost(videoInfo: VideoRequest, isPrepend = false) {
     } else {
       listOfVidsElem.appendChild(videoContainerElm)
     }
-    const votesUpsElem = document.getElementById(`votes_ups_${videoInfo._id}`);
-    const votesDownsElem = document.getElementById(`votes_downs_${videoInfo._id}`);
-    const scoreVotesElem = document.getElementById(`score_votes_${videoInfo._id}`);
-    votesUpsElem.addEventListener('click', (e) => {
-        fetch('http://localhost:7777/video-request/vote', {
-            method: 'PUT',
-            headers: {'content-Type': 'application/json'},
-            body: JSON.stringify({id: videoInfo._id, vote_type: 'ups'}),
-        }).then(res => res.json()).then((data: Votes) => 
-            scoreVotesElem.innerText = (data.ups - data.downs).toString()
-            )
-    });
 
-    votesDownsElem.addEventListener('click', (e) => {
+    applyVoteStyle(videoInfo.votes, videoInfo._id)
+
+    const scoreVotesElem = document.getElementById(`score_votes_${videoInfo._id}`);
+    const votesElms = document.querySelectorAll(`[id^=votes_][id$=_${videoInfo._id}]`);
+
+
+    votesElms.forEach((elm) => {
+      elm.addEventListener('click',  (e) => {
+        e.preventDefault();
+        const [, vote_type, id] = elm.getAttribute('id').split('_');
         fetch('http://localhost:7777/video-request/vote', {
             method: 'PUT',
             headers: {'content-Type': 'application/json'},
-            body: JSON.stringify({id: videoInfo._id, vote_type: 'downs'}),
-        }).then(res => res.json()).then((data: Votes) => 
-            scoreVotesElem.innerText = (data.ups - data.downs).toString()
-            )
-    });
+            body: JSON.stringify({id, vote_type, user_id: state.userId}),
+        }).then(res => res.json()).then((data: Votes) => {
+            scoreVotesElem.innerText = (data.ups.length - data.downs.length).toString()
+            applyVoteStyle(data, id, vote_type)
+        })
+      })
+    })
+}
+
+function applyVoteStyle(votes: Votes, video_id: string, vote_type?: string) {
+
+  if(!vote_type) {
+    if(votes.ups.indexOf(state.userId) !== -1) {
+      vote_type = 'ups'
+    } else if (votes.downs.indexOf(state.userId) !== -1) {
+      vote_type = 'downs'
+    } else {
+      return;
+    }
+  }
+
+  const votesUpsElem = document.getElementById(`votes_ups_${video_id}`);
+  const votesDownsElem = document.getElementById(`votes_downs_${video_id}`);
+
+  const voteDirElm = vote_type === 'ups'? votesUpsElem : votesDownsElem;
+  const otherDirElm = vote_type === 'ups'? votesDownsElem : votesUpsElem;
+
+  if(votes[vote_type].includes(state.userId)) {
+    voteDirElm.style.opacity = '1';
+    otherDirElm.style.opacity = '0.5';
+  } else  {
+    otherDirElm.style.opacity = '1';
+  }
+
 }
 
 function loadAllVidReqs(sortBy = 'newFirst', searchTerm = '') {

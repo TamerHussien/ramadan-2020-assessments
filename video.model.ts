@@ -1,6 +1,6 @@
     export interface Votes {
-        ups: number;
-        downs: number;
+        ups: Array<string>;
+        downs: Array<string>;
     }
 
     export interface VideoRef {
