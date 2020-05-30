@@ -1,16 +1,39 @@
 import { VideoRequest, Votes } from "./video.model";
 
 const listOfVidsElem = document.getElementById('listOfRequests');
-
+const SUPER_USER_ID = '19840222';
 const state = {
   sortBy :'newFirst',
   searchTerm: '',
   userId: '',
+  isSuperUser: false,
 }
 function appendVideoPost(videoInfo: VideoRequest, isPrepend = false) {
     const videoContainerElm = document.createElement('div');
     videoContainerElm.innerHTML =  `
     <div class="card mb-3">
+      ${state.isSuperUser
+        ? `<div class="card-header d-flex justify-content-between">
+      <select id="admin_change_status_${videoInfo._id}">
+        <option value="new">new</option>
+        <option value="planned">planned</option>
+        <option value="done">done</option>
+      </select>
+      <div class="input-group ml-2 mr-5 ${videoInfo.status !== 'done'? 'd-none': ''}" id="admin_video_res_container_${videoInfo._id}">
+      <input type="text" class="form-control" 
+      id="admin_video_res_${videoInfo._id}"
+      placeholder="paste here youtube video id">
+      <div class="input-group-append">
+        <button class="btn btn-outline-secondary"
+        id="admin_save_video_res_${videoInfo._id}"
+         type="button">Save</button>
+      </div>
+      </div>
+      <button class="btn btn-danger"
+      id="admin_delete_video_res_${videoInfo._id}"
+      >Delete</button>
+      </div> `: ''
+    }
               <div class="card-body d-flex justify-content-between flex-row">
                 <div class="d-flex flex-column">
                   <h3>${videoInfo.topic_title}</h3>
@@ -47,7 +70,50 @@ function appendVideoPost(videoInfo: VideoRequest, isPrepend = false) {
     } else {
       listOfVidsElem.appendChild(videoContainerElm)
     }
+if (state.isSuperUser) {
+    const adminChangeElm = document.getElementById(`admin_change_status_${videoInfo._id}`);
+    const adminVideoResElm = document.getElementById(`admin_video_res_${videoInfo._id}`);
+    const adminSaveElm = document.getElementById(`admin_save_video_res_${videoInfo._id}`);
+    const adminDeleteElm = document.getElementById(`admin_delete_video_res_${videoInfo._id}`);
+    const  adminVideoResContainer= document.getElementById(`admin_video_res_container_${videoInfo._id}`);
+    
+    (<HTMLInputElement>adminChangeElm).value = videoInfo.status;
+    (<HTMLInputElement>adminVideoResElm).value = videoInfo.video_ref.link;
 
+    adminChangeElm.addEventListener('change', (e) => {
+      const val = (<HTMLInputElement>e.target).value;
+      if(val === 'done') {
+        adminVideoResContainer.classList.remove('d-none');
+      } else {
+        updateVideoStatus(videoInfo._id, val);
+    }
+  })
+
+  adminSaveElm.addEventListener('click', (e) => {
+    e.preventDefault();
+    if(!(<HTMLInputElement>adminVideoResElm).value) {
+      adminVideoResElm.classList.add('is-invalid');
+      adminVideoResElm.addEventListener('input', () => adminVideoResElm.classList.remove('is-invalid'))
+      return
+    }
+    updateVideoStatus(videoInfo._id, 'done', (<HTMLInputElement>adminVideoResElm).value);
+    
+  });
+
+  adminDeleteElm.addEventListener('click', (e) => {
+    console.log(e)
+    e.preventDefault();
+    const isSure = confirm(`Are You sure you want to delete ${videoInfo.topic_title}`)
+    if(!isSure) return;
+    fetch('http://localhost:7777/video-request', {
+        method: 'DELETE',
+        headers: {'content-Type': 'application/json'},
+        body: JSON.stringify({id: videoInfo._id}),
+    }).then(res => res.json()).then(data => {
+      window.location.reload();
+    })
+  })
+}
     applyVoteStyle(videoInfo.votes, videoInfo._id)
 
     const scoreVotesElem = document.getElementById(`score_votes_${videoInfo._id}`);
@@ -55,6 +121,9 @@ function appendVideoPost(videoInfo: VideoRequest, isPrepend = false) {
 
 
     votesElms.forEach((elm) => {
+      if(state.isSuperUser) {
+        return;
+      }
       elm.addEventListener('click',  (e) => {
         e.preventDefault();
         const [, vote_type, id] = elm.getAttribute('id').split('_');
@@ -70,8 +139,24 @@ function appendVideoPost(videoInfo: VideoRequest, isPrepend = false) {
     })
 }
 
-function applyVoteStyle(votes: Votes, video_id: string, vote_type?: string) {
+function updateVideoStatus(id: string, status: string, resVideo = '') {
+  fetch('http://localhost:7777/video-request', {
+    method: 'PUT',
+    headers: {'content-type': 'application/json'},
+    body: JSON.stringify({id, status, resVideo})
+  }).then((res) => res.json())
+  .then(data => window.location.reload())
+}
 
+function applyVoteStyle(votes: Votes, video_id: string, vote_type?: string) {
+  const votesUpsElem = document.getElementById(`votes_ups_${video_id}`);
+  const votesDownsElem = document.getElementById(`votes_downs_${video_id}`);
+  if(state.isSuperUser) {
+    votesUpsElem.style.opacity = '0.5';
+    votesUpsElem.style.cursor = 'not-allowed'
+    votesDownsElem.style.opacity = '0.5'
+    votesDownsElem.style.cursor = 'not-allowed'
+  }
   if(!vote_type) {
     if(votes.ups.indexOf(state.userId) !== -1) {
       vote_type = 'ups'
@@ -82,8 +167,7 @@ function applyVoteStyle(votes: Votes, video_id: string, vote_type?: string) {
     }
   }
 
-  const votesUpsElem = document.getElementById(`votes_ups_${video_id}`);
-  const votesDownsElem = document.getElementById(`votes_downs_${video_id}`);
+ 
 
   const voteDirElm = vote_type === 'ups'? votesUpsElem : votesDownsElem;
   const otherDirElm = vote_type === 'ups'? votesDownsElem : votesUpsElem;
@@ -147,6 +231,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
     if(window.location.search) {
       state.userId = new URLSearchParams(window.location.search).get('id')
+      if(state.userId === SUPER_USER_ID) {
+        state.isSuperUser = true;
+        document.querySelector('.normal-user-content').classList.add('d-none')
+      }
       formLoginElm.classList.add('d-none');
       appContentElm.classList.remove('d-none');
     }
