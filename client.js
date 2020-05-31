@@ -5,6 +5,7 @@ var SUPER_USER_ID = '19840222';
 var state = {
     sortBy: 'newFirst',
     searchTerm: '',
+    filterBy: 'all',
     userId: '',
     isSuperUser: false
 };
@@ -12,7 +13,7 @@ function appendVideoPost(videoInfo, isPrepend) {
     if (isPrepend === void 0) { isPrepend = false; }
     var videoContainerElm = document.createElement('div');
     videoContainerElm.innerHTML = "\n    <div class=\"card mb-3\">\n      " + (state.isSuperUser
-        ? "<div class=\"card-header d-flex justify-content-between\">\n      <select id=\"admin_change_status_" + videoInfo._id + "\">\n        <option value=\"new\">new</option>\n        <option value=\"planned\">planned</option>\n        <option value=\"done\">done</option>\n      </select>\n      <div class=\"input-group ml-2 mr-5 " + (videoInfo.status !== 'done' ? 'd-none' : '') + "\" id=\"admin_video_res_container_" + videoInfo._id + "\">\n      <input type=\"text\" class=\"form-control\" \n      id=\"admin_video_res_" + videoInfo._id + "\"\n      placeholder=\"paste here youtube video id\">\n      <div class=\"input-group-append\">\n        <button class=\"btn btn-outline-secondary\"\n        id=\"admin_save_video_res_" + videoInfo._id + "\"\n         type=\"button\">Save</button>\n      </div>\n      </div>\n      <button class=\"btn btn-danger\"\n      id=\"admin_delete_video_res_" + videoInfo._id + "\"\n      >Delete</button>\n      </div> " : '') + "\n              <div class=\"card-body d-flex justify-content-between flex-row\">\n                <div class=\"d-flex flex-column\">\n                  <h3>" + videoInfo.topic_title + "</h3>\n                  <p class=\"text-muted mb-2\">" + videoInfo.topic_details + "</p>\n                  <p class=\"mb-0 text-muted\">\n                    " + (videoInfo.expected_result && "<strong>Expected results:</strong> " + videoInfo.expected_result) + "\n                  </p>\n                </div>\n                <div class=\"d-flex flex-column text-center\">\n                  <a class=\"btn btn-link\" id=\"votes_ups_" + videoInfo._id + "\">\uD83D\uDD3A</a>\n                  <h3 id=\"score_votes_" + videoInfo._id + "\">" + (videoInfo.votes.ups.length - videoInfo.votes.downs.length) + "</h3>\n                  <a class=\"btn btn-link\" id=\"votes_downs_" + videoInfo._id + "\">\uD83D\uDD3B</a>\n                </div>\n              </div>\n              <div class=\"card-footer d-flex flex-row justify-content-between\">\n                <div>\n                  <span class=\"text-info\">" + videoInfo.status.toUpperCase() + "</span>\n                  &bullet; added by <strong>" + videoInfo.author_name + "</strong> on\n                  <strong>" + new Date(videoInfo.submit_date).toLocaleDateString() + "</strong>\n                </div>\n                <div\n                  class=\"d-flex justify-content-center flex-column 408ml-auto mr-2\"\n                >\n                  <div class=\"badge badge-success\">\n                  " + videoInfo.target_level + "\n                  </div>\n                </div>\n              </div>\n            </div>\n    ";
+        ? "<div class=\"card-header d-flex justify-content-between\">\n      <select id=\"admin_change_status_" + videoInfo._id + "\">\n        <option value=\"new\">new</option>\n        <option value=\"planned\">planned</option>\n        <option value=\"done\">done</option>\n      </select>\n      <div class=\"input-group ml-2 mr-5 " + (videoInfo.status !== 'done' ? 'd-none' : '') + "\" id=\"admin_video_res_container_" + videoInfo._id + "\">\n      <input type=\"text\" class=\"form-control\" \n      id=\"admin_video_res_" + videoInfo._id + "\"\n      placeholder=\"paste here youtube video id\">\n      <div class=\"input-group-append\">\n        <button class=\"btn btn-outline-secondary\"\n        id=\"admin_save_video_res_" + videoInfo._id + "\"\n         type=\"button\">Save</button>\n      </div>\n      </div>\n      <button class=\"btn btn-danger\"\n      id=\"admin_delete_video_res_" + videoInfo._id + "\"\n      >Delete</button>\n      </div> " : '') + "\n              <div class=\"card-body d-flex justify-content-between flex-row\">\n                <div class=\"d-flex flex-column\">\n                  <h3>" + videoInfo.topic_title + "</h3>\n                  <p class=\"text-muted mb-2\">" + videoInfo.topic_details + "</p>\n                  <p class=\"mb-0 text-muted\">\n                    " + (videoInfo.expected_result && "<strong>Expected results:</strong> " + videoInfo.expected_result) + "\n                  </p>\n                </div>\n                " + (videoInfo.status === 'done' ? "<div class=\"ml-auto mr-3\">\n                  <iframe width=\"240\" height=\"135\" src=\"http://www.youtube.com/embed/" + videoInfo.video_ref.link + "\" frameborder=\"0\" allowfullscreen></iframe>\n                </div>" : '') + "\n                <div class=\"d-flex flex-column text-center\">\n                  <a class=\"btn btn-link\" id=\"votes_ups_" + videoInfo._id + "\">\uD83D\uDD3A</a>\n                  <h3 id=\"score_votes_" + videoInfo._id + "\">" + (videoInfo.votes.ups.length - videoInfo.votes.downs.length) + "</h3>\n                  <a class=\"btn btn-link\" id=\"votes_downs_" + videoInfo._id + "\">\uD83D\uDD3B</a>\n                </div>\n              </div>\n              <div class=\"card-footer d-flex flex-row justify-content-between\">\n                <div class=\"" + (videoInfo.status === 'done' ? 'text-success' : videoInfo.status === 'planned' ? 'text-primary' : '') + "\">\n                  <span>" + videoInfo.status.toUpperCase() + " " + (videoInfo.status === 'done' ? "on " + new Date(videoInfo.video_ref.date).toLocaleDateString() : '') + "</span>\n                  &bullet; added by <strong>" + videoInfo.author_name + "</strong> on\n                  <strong>" + new Date(videoInfo.submit_date).toLocaleDateString() + "</strong>\n                </div>\n                <div\n                  class=\"d-flex justify-content-center flex-column 408ml-auto mr-2\"\n                >\n                  <div class=\"badge badge-success\">\n                  " + videoInfo.target_level + "\n                  </div>\n                </div>\n              </div>\n            </div>\n    ";
     if (isPrepend) {
         listOfVidsElem.prepend(videoContainerElm);
     }
@@ -60,11 +61,11 @@ function appendVideoPost(videoInfo, isPrepend) {
             });
         });
     }
-    applyVoteStyle(videoInfo.votes, videoInfo._id);
+    applyVoteStyle(videoInfo.votes, videoInfo._id, videoInfo.status === "done");
     var scoreVotesElem = document.getElementById("score_votes_" + videoInfo._id);
     var votesElms = document.querySelectorAll("[id^=votes_][id$=_" + videoInfo._id + "]");
     votesElms.forEach(function (elm) {
-        if (state.isSuperUser) {
+        if (state.isSuperUser || videoInfo.status === 'done') {
             return;
         }
         elm.addEventListener('click', function (e) {
@@ -76,7 +77,7 @@ function appendVideoPost(videoInfo, isPrepend) {
                 body: JSON.stringify({ id: id, vote_type: vote_type, user_id: state.userId })
             }).then(function (res) { return res.json(); }).then(function (data) {
                 scoreVotesElem.innerText = (data.ups.length - data.downs.length).toString();
-                applyVoteStyle(data, id, vote_type);
+                applyVoteStyle(data, id, videoInfo.status === 'done', vote_type);
             });
         });
     });
@@ -90,10 +91,10 @@ function updateVideoStatus(id, status, resVideo) {
     }).then(function (res) { return res.json(); })
         .then(function (data) { return window.location.reload(); });
 }
-function applyVoteStyle(votes, video_id, vote_type) {
+function applyVoteStyle(votes, video_id, isDisabled, vote_type) {
     var votesUpsElem = document.getElementById("votes_ups_" + video_id);
     var votesDownsElem = document.getElementById("votes_downs_" + video_id);
-    if (state.isSuperUser) {
+    if (isDisabled) {
         votesUpsElem.style.opacity = '0.5';
         votesUpsElem.style.cursor = 'not-allowed';
         votesDownsElem.style.opacity = '0.5';
@@ -120,10 +121,11 @@ function applyVoteStyle(votes, video_id, vote_type) {
         otherDirElm.style.opacity = '1';
     }
 }
-function loadAllVidReqs(sortBy, searchTerm) {
+function loadAllVidReqs(sortBy, searchTerm, filterBy) {
     if (sortBy === void 0) { sortBy = 'newFirst'; }
     if (searchTerm === void 0) { searchTerm = ''; }
-    fetch("http://localhost:7777/video-request?sortBy=" + sortBy + "&searchTerm=" + searchTerm).then(function (res) { return res.json(); }).then(function (data) {
+    if (filterBy === void 0) { filterBy = 'all'; }
+    fetch("http://localhost:7777/video-request?sortBy=" + sortBy + "&searchTerm=" + searchTerm + "&filterBy=" + filterBy).then(function (res) { return res.json(); }).then(function (data) {
         listOfVidsElem.innerHTML = '';
         data.forEach(function (item) {
             appendVideoPost(item);
@@ -168,6 +170,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var searchBoxElm = document.getElementById('search_box');
     var formLoginElm = document.querySelector('.form-login');
     var appContentElm = document.querySelector('.app-content');
+    var filterByElms = document.querySelectorAll('[id*=filter_by_]');
     if (window.location.search) {
         state.userId = new URLSearchParams(window.location.search).get('id');
         if (state.userId === SUPER_USER_ID) {
@@ -178,11 +181,20 @@ document.addEventListener('DOMContentLoaded', function () {
         appContentElm.classList.remove('d-none');
     }
     loadAllVidReqs();
+    filterByElms.forEach(function (elm) {
+        elm.addEventListener('click', function (e) {
+            var _a = elm.getAttribute('id').split('_'), filterBy = _a[2];
+            state.filterBy = filterBy;
+            filterByElms.forEach(function (elm) { return elm.classList.remove('active'); });
+            elm.classList.add('active');
+            loadAllVidReqs(state.searchTerm, state.searchTerm, state.filterBy);
+        });
+    });
     sortByElms.forEach(function (elm) {
         elm.addEventListener('click', function (e) {
             e.preventDefault();
             state.sortBy = this.querySelector('input').value;
-            loadAllVidReqs(state.sortBy);
+            loadAllVidReqs(state.sortBy, state.searchTerm, state.filterBy);
             this.classList.add('active');
             if (state.sortBy === 'topVotedFirst') {
                 document.getElementById('sort_by_new').classList.remove('active');
@@ -194,7 +206,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
     searchBoxElm.addEventListener('input', debounce(function (e) {
         state.searchTerm = e.target.value;
-        loadAllVidReqs(state.sortBy, state.searchTerm);
+        loadAllVidReqs(state.sortBy, state.searchTerm, state.filterBy);
     }, 300));
     formVidReq.addEventListener('submit', function (e) {
         e.preventDefault();

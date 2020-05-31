@@ -5,6 +5,7 @@ const SUPER_USER_ID = '19840222';
 const state = {
   sortBy :'newFirst',
   searchTerm: '',
+  filterBy: 'all',
   userId: '',
   isSuperUser: false,
 }
@@ -43,6 +44,9 @@ function appendVideoPost(videoInfo: VideoRequest, isPrepend = false) {
                     }
                   </p>
                 </div>
+                ${videoInfo.status === 'done'? `<div class="ml-auto mr-3">
+                  <iframe width="240" height="135" src="http://www.youtube.com/embed/${videoInfo.video_ref.link}" frameborder="0" allowfullscreen></iframe>
+                </div>`: ''}
                 <div class="d-flex flex-column text-center">
                   <a class="btn btn-link" id="votes_ups_${videoInfo._id}">🔺</a>
                   <h3 id="score_votes_${videoInfo._id}">${videoInfo.votes.ups.length - videoInfo.votes.downs.length}</h3>
@@ -50,8 +54,8 @@ function appendVideoPost(videoInfo: VideoRequest, isPrepend = false) {
                 </div>
               </div>
               <div class="card-footer d-flex flex-row justify-content-between">
-                <div>
-                  <span class="text-info">${videoInfo.status.toUpperCase()}</span>
+                <div class="${videoInfo.status === 'done'? 'text-success': videoInfo.status === 'planned'? 'text-primary':''}">
+                  <span>${videoInfo.status.toUpperCase()} ${videoInfo.status === 'done'? `on ${new Date(videoInfo.video_ref.date).toLocaleDateString()}`: ''}</span>
                   &bullet; added by <strong>${videoInfo.author_name}</strong> on
                   <strong>${new Date(videoInfo.submit_date).toLocaleDateString()}</strong>
                 </div>
@@ -114,14 +118,14 @@ if (state.isSuperUser) {
     })
   })
 }
-    applyVoteStyle(videoInfo.votes, videoInfo._id)
+    applyVoteStyle(videoInfo.votes,videoInfo._id, videoInfo.status==="done" )
 
     const scoreVotesElem = document.getElementById(`score_votes_${videoInfo._id}`);
     const votesElms = document.querySelectorAll(`[id^=votes_][id$=_${videoInfo._id}]`);
 
 
     votesElms.forEach((elm) => {
-      if(state.isSuperUser) {
+      if(state.isSuperUser || videoInfo.status === 'done') {
         return;
       }
       elm.addEventListener('click',  (e) => {
@@ -133,7 +137,7 @@ if (state.isSuperUser) {
             body: JSON.stringify({id, vote_type, user_id: state.userId}),
         }).then(res => res.json()).then((data: Votes) => {
             scoreVotesElem.innerText = (data.ups.length - data.downs.length).toString()
-            applyVoteStyle(data, id, vote_type)
+            applyVoteStyle(data, id,videoInfo.status === 'done' ,vote_type)
         })
       })
     })
@@ -148,10 +152,10 @@ function updateVideoStatus(id: string, status: string, resVideo = '') {
   .then(data => window.location.reload())
 }
 
-function applyVoteStyle(votes: Votes, video_id: string, vote_type?: string) {
+function applyVoteStyle(votes: Votes, video_id: string,isDisabled: boolean ,vote_type?: string) {
   const votesUpsElem = document.getElementById(`votes_ups_${video_id}`);
   const votesDownsElem = document.getElementById(`votes_downs_${video_id}`);
-  if(state.isSuperUser) {
+  if(isDisabled) {
     votesUpsElem.style.opacity = '0.5';
     votesUpsElem.style.cursor = 'not-allowed'
     votesDownsElem.style.opacity = '0.5'
@@ -181,8 +185,8 @@ function applyVoteStyle(votes: Votes, video_id: string, vote_type?: string) {
 
 }
 
-function loadAllVidReqs(sortBy = 'newFirst', searchTerm = '') {
-  fetch(`http://localhost:7777/video-request?sortBy=${sortBy}&searchTerm=${searchTerm}`).then(res => res.json()).then((data: VideoRequest[]) => {
+function loadAllVidReqs(sortBy = 'newFirst', searchTerm = '', filterBy = 'all') {
+  fetch(`http://localhost:7777/video-request?sortBy=${sortBy}&searchTerm=${searchTerm}&filterBy=${filterBy}`).then(res => res.json()).then((data: VideoRequest[]) => {
   listOfVidsElem.innerHTML = '';
     data.forEach(item =>
         {
@@ -228,6 +232,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const searchBoxElm = document.getElementById('search_box') as HTMLInputElement;
     const formLoginElm = document.querySelector('.form-login');
     const appContentElm = document.querySelector('.app-content');
+    const filterByElms = document.querySelectorAll('[id*=filter_by_]')
 
     if(window.location.search) {
       state.userId = new URLSearchParams(window.location.search).get('id')
@@ -239,11 +244,20 @@ document.addEventListener('DOMContentLoaded', function() {
       appContentElm.classList.remove('d-none');
     }
     loadAllVidReqs()
+    filterByElms.forEach(elm => {
+      elm.addEventListener('click', (e) => {
+        const [,, filterBy] = elm.getAttribute('id').split('_');
+        state.filterBy = filterBy;
+        filterByElms.forEach(elm => elm.classList.remove('active'));
+        elm.classList.add('active');
+        loadAllVidReqs(state.searchTerm, state.searchTerm, state.filterBy);
+      })
+    })
     sortByElms.forEach(elm => {
       elm.addEventListener('click',function(e) {
         e.preventDefault();
         state.sortBy = this.querySelector('input').value;
-        loadAllVidReqs(state.sortBy);
+        loadAllVidReqs(state.sortBy, state.searchTerm, state.filterBy);
         this.classList.add('active');
         if(state.sortBy === 'topVotedFirst'){
           document.getElementById('sort_by_new').classList.remove('active');
@@ -255,7 +269,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     searchBoxElm.addEventListener('input', debounce((e: Event) => {
       state.searchTerm  = (<HTMLInputElement>e.target).value;
-      loadAllVidReqs(state.sortBy, state.searchTerm)
+      loadAllVidReqs(state.sortBy, state.searchTerm, state.filterBy)
     }, 300))
 
     formVidReq.addEventListener('submit', (e) => {
